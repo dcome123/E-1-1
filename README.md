@@ -75,10 +75,10 @@ Server:
 - [x] 바인드 마운트 반영 (명령/출력 비교)
 - [x] 바인드 마운트 스크린샷
 - [x] Docker 볼륨 영속성
-- [x] 트러블슈팅 2건 이상 (3건 기록)
+- [x] 트러블슈팅 2건 이상 (6건 기록)
 - [x] Git 사용자 정보 / 기본 브랜치 설정
 - [x] GitHub CLI(gh) 로그인 및 저장소 푸시 (SSH)
-- [x] VSCode GitHub 로그인 화면 (WSL 연결 문제로 폴더 연동 화면은 대체, 트러블슈팅 6 참고)
+- [x] VSCode GitHub 로그인 및 WSL 저장소 폴더 연동 (트러블슈팅 6 참고)
 
 
 ### 검증 방법과 증거 위치
@@ -386,7 +386,11 @@ docker-web/
     ├── port-8080.png
     ├── port-8081.png
     ├── bind-before.png
-    └── bind-after.png
+    ├── bind-after.png
+    ├── github-repo.png
+    ├── github-ssh-key.png
+    ├── vscode-github.png
+    └── vscode-workspace.png
 ```
 
 `site/index.html`
@@ -692,7 +696,12 @@ VSCode 계정 메뉴에 GitHub 계정(`dcome123`)으로 로그인된 화면:
 
 ![VSCode GitHub 로그인](images/vscode-github.png)
 
-> 참고: VSCode의 WSL 연결이 `Segmentation fault`로 실패해, VSCode에서 저장소 폴더를 여는 화면은 남기지 못했다. 저장소 연동은 위의 `git remote -v`, `git push` 출력과 GitHub 저장소 화면으로 확인할 수 있다. (트러블슈팅 6 참고)
+VSCode가 WSL(Ubuntu)에 연결되어 `docker-web` 저장소 폴더를 열고, 터미널에서 `main` 브랜치가 표시되는 화면:
+
+![VSCode WSL 저장소 연동](images/vscode-workspace.png)
+
+- 관찰: 왼쪽 아래에 `WSL: Ubuntu`, 탐색기에 `docker-web [WSL: Ubuntu]`, 터미널에 `docker-web on main`이 표시되어 VSCode에서 저장소가 열려 있음을 확인할 수 있다.
+- 참고: 이 화면을 찍은 시점에는 `github-*.png` 파일이 `images` 폴더로 옮겨지기 전이라 탐색기에 폴더 바로 아래로 보인다. 최종 위치는 `images/`이다.
 
 ## 5. 트러블슈팅
 
@@ -758,15 +767,17 @@ VSCode 계정 메뉴에 GitHub 계정(`dcome123`)으로 로그인된 화면:
 ### 트러블슈팅 6: WSL에서 `code .` 실행 시 Segmentation fault
 
 - **문제**: WSL(Ubuntu) 터미널에서 `code .`를 실행하면 VSCode가 열리지 않고 아래 오류가 출력되었다.
+  
   ```
   $ code .
   Segmentation fault
   ```
+  
   VSCode를 Windows에서 직접 열었을 때도 터미널 영역에 `Segmentation fault`와 "WSL: Ubuntu에서 연결이 끊어졌습니다" 메시지가 표시되었다.
-- **원인 가설**: VSCode가 WSL 안에 설치하는 서버(`~/.vscode-server`) 또는 WSL 연동 구성 요소가 시작 직후 비정상 종료한다. 정확한 원인은 확인하지 못했다.
-- **확인**: 같은 명령이 반복해서 같은 오류를 냈다. `wsl --shutdown`으로 WSL을 재시작한 뒤에도 `code .`는 동일하게 실패했다. Docker와 Git 명령은 같은 WSL 터미널에서 정상 동작해, 문제는 VSCode의 WSL 연동에 한정되었다.
-- **해결/대안**: WSL 연결 없이 Windows에서 VSCode를 직접 실행해 GitHub 계정으로 로그인하고(위 `vscode-github.png`), 저장소 푸시는 WSL 터미널의 GitHub CLI(`gh auth login`)와 SSH로 수행했다.
-- **결과**: VSCode GitHub 로그인과 저장소 푸시는 완료했지만, VSCode의 WSL 폴더 연결 문제 자체는 해결하지 못했다. 추가로 시도해 볼 수 있는 방법: `~/.vscode-server` 삭제 후 재시도, `wsl --update`.
+- **원인 가설**: VSCode가 WSL 안에 설치하는 서버(`~/.vscode-server`) 또는 WSL 연동 구성 요소가 시작 직후 비정상 종료한다.
+- **확인**: 같은 명령이 반복해서 같은 오류를 냈다. `wsl --shutdown`으로 WSL을 재시작한 뒤에도 한동안 동일하게 실패했다. Docker와 Git 명령은 같은 WSL 터미널에서 정상 동작해, 문제는 VSCode의 WSL 연동에 한정되었다.
+- **해결/대안**: 그동안 저장소 푸시는 WSL 터미널의 GitHub CLI(`gh auth login`)와 SSH로 수행했다. 이후 VSCode를 다시 시도하자 WSL에 정상 연결되었다.
+- **결과**: VSCode가 `docker-web [WSL: Ubuntu]`로 열리고 GitHub 계정(`dcome123`)으로 로그인된 화면을 확인했다(위 `vscode-github.png`, `vscode-workspace.png`). 정확한 원인은 확인하지 못했고, 재시도로 해결되었다.
 
 ## 6. 개념 정리
 
@@ -785,8 +796,8 @@ VSCode 계정 메뉴에 GitHub 계정(`dcome123`)으로 로그인된 화면:
 ## 7. 재현 방법
 
 ```bash
-git clone <저장소 주소>
-cd <저장소 폴더>
+git clone https://github.com/dcome123/E-1-1.git
+cd E-1-1
 docker build -t my-web:1.0 .
 docker run -d -p 8080:80 --name my-web-8080 my-web:1.0
 curl http://localhost:8080
