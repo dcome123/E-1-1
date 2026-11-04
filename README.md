@@ -77,7 +77,8 @@ Server:
 - [x] Docker 볼륨 영속성
 - [x] 트러블슈팅 2건 이상 (3건 기록)
 - [x] Git 사용자 정보 / 기본 브랜치 설정
-- [ ] VSCode GitHub 로그인 및 저장소 연동 — TODO
+- [x] GitHub CLI(gh) 로그인 및 저장소 푸시 (SSH)
+- [x] VSCode GitHub 로그인 화면 (WSL 연결 문제로 폴더 연동 화면은 대체, 트러블슈팅 6 참고)
 
 
 ### 검증 방법과 증거 위치
@@ -641,19 +642,57 @@ init.defaultbranch=main
 - 마스킹: 이메일은 `숫자+아이디@users.noreply.github.com` 형식의 GitHub 제공 주소이며, 실제 이메일이 아니지만 계정 번호가 포함되어 있어 가려서 기록했다.
 - 참고: `git config --list`는 출력이 길면 목록 화면(`(END)`)이 열리고, `q`를 누르면 빠져나온다.
 
-GitHub 로그인 및 저장소 연동 (VSCode):
+GitHub 로그인 및 저장소 연동:
 
-> TODO: 아래 증거를 첨부한다. (토큰, 인증 코드, 개인 이메일이 화면에 보이지 않는지 확인)
-> - VSCode에서 GitHub 로그인된 화면 (계정 메뉴)
-> - 저장소 연결/푸시 결과 (`git remote -v`, `git push` 출력)
-> - GitHub 저장소 웹 화면
+저장소 `E-1-1`(Public, 빈 저장소)을 GitHub에서 만들고, GitHub CLI(`gh`)로 브라우저 인증을 한 뒤 SSH 방식으로 푸시했다. 토큰이나 비밀번호는 입력하지 않았다.
 
 ```bash
+$ gh auth login
+? What account do you want to log into? GitHub.com
+? What is your preferred protocol for Git operations on this host? SSH
+? Generate a new SSH key to add to your GitHub account? Yes
+? Title for your SSH key: GitHub CLI
+? How would you like to authenticate GitHub CLI? Login with a web browser
+! First copy your one-time code: (마스킹)
+✓ 브라우저에서 인증 완료
+$ git remote set-url origin git@github.com:dcome123/E-1-1.git
 $ git remote -v
-TODO
+origin  git@github.com:dcome123/E-1-1.git (fetch)
+origin  git@github.com:dcome123/E-1-1.git (push)
 $ git push -u origin main
-TODO
+The authenticity of host 'github.com (20.200.245.247)' can't be established.
+ED25519 key fingerprint is: SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'github.com' (ED25519) to the list of known hosts.
+Enumerating objects: 11, done.
+Counting objects: 100% (11/11), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (11/11), 72.87 KiB | 9.11 MiB/s, done.
+Total 11 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To github.com:dcome123/E-1-1.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main'.
 ```
+
+- 관찰: `main` 브랜치가 GitHub 저장소로 올라갔고 `origin/main`을 추적한다.
+- 해석: Git은 내 컴퓨터에서 변경 이력을 관리하는 로컬 버전 관리 도구이고, GitHub는 그 저장소를 원격에 올려 공유·협업하는 플랫폼이다. `git push`가 둘을 연결한다.
+
+연동 증거:
+
+GitHub 저장소 화면 (푸시한 파일과 README 이미지가 표시됨):
+
+![GitHub 저장소](images/github-repo.png)
+
+GitHub에 등록된 SSH 키 (`GitHub CLI`, 개인키는 표시되지 않음):
+
+![SSH 키 등록](images/github-ssh-key.png)
+
+VSCode 계정 메뉴에 GitHub 계정(`dcome123`)으로 로그인된 화면:
+
+![VSCode GitHub 로그인](images/vscode-github.png)
+
+> 참고: VSCode의 WSL 연결이 `Segmentation fault`로 실패해, VSCode에서 저장소 폴더를 여는 화면은 남기지 못했다. 저장소 연동은 위의 `git remote -v`, `git push` 출력과 GitHub 저장소 화면으로 확인할 수 있다. (트러블슈팅 6 참고)
 
 ## 5. 트러블슈팅
 
@@ -703,6 +742,31 @@ TODO
 - **확인**: 모든 `docker` 명령이 같은 데몬 연결 오류를 냈고, 포트 8082뿐 아니라 컨테이너가 응답하지 않았다. 파일(`site/`)은 정상이었다.
 - **해결**: Docker Desktop을 실행해 `Engine running`이 될 때까지 기다린 뒤 `docker ps -a`로 확인하고, 멈춘 컨테이너는 `docker start`로 재시작했다.
 - **결과**: `docker ps`에서 `my-web-8080`, `my-web-8081`이 `Up (healthy)`로 복구되었고 8082 바인드 마운트 컨테이너도 정상 응답했다.
+
+### 트러블슈팅 5: HTTPS 푸시 인증 실패
+
+- **문제**: `git push` 중 아래 오류가 발생했다.
+  ```
+  remote: Invalid username or token. Password authentication is not supported for Git operations.
+  fatal: Authentication failed for 'https://github.com/dcome123/E-1-1.git/'
+  ```
+- **원인 가설**: GitHub는 Git 작업에서 계정 비밀번호 인증을 지원하지 않으며, 입력칸(Username/Password)에 알맞은 값을 넣지 않았을 것이다.
+- **확인**: 오류 문구가 비밀번호 인증 미지원을 명시했다. 또한 VSCode의 WSL 연결이 `Segmentation fault`로 실패해(`code .`), VSCode의 GitHub 로그인 기능으로 푸시하는 방법도 쓰지 못했다.
+- **해결**: GitHub CLI(`gh auth login`)로 브라우저 인증을 하고 SSH 키를 생성/등록한 뒤, 원격 주소를 `git@github.com:dcome123/E-1-1.git`로 바꿔 푸시했다.
+- **결과**: 푸시 성공. 토큰이나 비밀번호를 파일/기록에 남기지 않았다.
+
+### 트러블슈팅 6: WSL에서 `code .` 실행 시 Segmentation fault
+
+- **문제**: WSL(Ubuntu) 터미널에서 `code .`를 실행하면 VSCode가 열리지 않고 아래 오류가 출력되었다.
+  ```
+  $ code .
+  Segmentation fault
+  ```
+  VSCode를 Windows에서 직접 열었을 때도 터미널 영역에 `Segmentation fault`와 "WSL: Ubuntu에서 연결이 끊어졌습니다" 메시지가 표시되었다.
+- **원인 가설**: VSCode가 WSL 안에 설치하는 서버(`~/.vscode-server`) 또는 WSL 연동 구성 요소가 시작 직후 비정상 종료한다. 정확한 원인은 확인하지 못했다.
+- **확인**: 같은 명령이 반복해서 같은 오류를 냈다. `wsl --shutdown`으로 WSL을 재시작한 뒤에도 `code .`는 동일하게 실패했다. Docker와 Git 명령은 같은 WSL 터미널에서 정상 동작해, 문제는 VSCode의 WSL 연동에 한정되었다.
+- **해결/대안**: WSL 연결 없이 Windows에서 VSCode를 직접 실행해 GitHub 계정으로 로그인하고(위 `vscode-github.png`), 저장소 푸시는 WSL 터미널의 GitHub CLI(`gh auth login`)와 SSH로 수행했다.
+- **결과**: VSCode GitHub 로그인과 저장소 푸시는 완료했지만, VSCode의 WSL 폴더 연결 문제 자체는 해결하지 못했다. 추가로 시도해 볼 수 있는 방법: `~/.vscode-server` 삭제 후 재시도, `wsl --update`.
 
 ## 6. 개념 정리
 
