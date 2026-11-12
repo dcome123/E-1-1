@@ -716,81 +716,35 @@ VSCode가 WSL(Ubuntu)에 연결되어 `docker-web` 저장소 폴더를 열고, �
 - 관찰: 왼쪽 아래에 `WSL: Ubuntu`, 탐색기에 `docker-web [WSL: Ubuntu]`, 터미널에 `docker-web on main`이 표시되어 VSCode에서 저장소가 열려 있음을 확인할 수 있다.
 - 참고: 이 화면을 찍은 시점에는 `github-*.png` 파일이 `images` 폴더로 옮겨지기 전이라 탐색기에 폴더 바로 아래로 보인다. 최종 위치는 `images/`이다.
 
-## 5. 트러블슈팅
+## 5. 트러블슈팅 🌟
+[Case 01] : Docker 컨테이너의 생명주기와 이름 점유 개념을 명확히 이해함.
+[Case 02] : 서비스 기동 시간(Timing)에 따른 오류를 논리적으로 분석하고 검증함.
+[Case 03] : 최신 보안 정책에 맞춰 SSH 인증 방식을 도입하여 개발 환경을 개선함.
 
-### 트러블슈팅 1: 컨테이너 이름 충돌
+✍️ [Case 01] 컨테이너 이름 충돌 (기초 역량)
+문제: docker run 실행 시 Conflict. The container name "/my-web-bind" is already in use 오류 발생.
+원인 가설: 동일한 이름의 컨테이너가 이미 존재하며, 종료(Exited)된 상태라도 이름을 계속 점유하고 있을 것이다.
+확인: docker ps -a --filter name=my-web-bind로 조회 결과, 에러 메시지의 ID와 일치하는 종료된 컨테이너 확인.
+해결: docker rm -f my-web-bind로 기존 컨테이너를 삭제 후 재실행.
+결과: 이름 충돌 없이 정상적으로 컨테이너 실행 성공.
 
-- **문제**: `docker run -d -p 8082:80 --name my-web-bind ...` 실행 시 아래 오류가 발생했다.
-  ```
-  docker: Error response from daemon: Conflict. The container name "/my-web-bind" is already in use by container "ce67b00c9064...". You have to remove (or rename) that container to be able to reuse that name.
-  ```
-- **원인 가설**: 같은 이름의 컨테이너가 이미 존재한다. 종료된 컨테이너도 이름을 계속 점유한다.
-- **확인**: `docker ps -a --filter name=my-web-bind`로 조회한 컨테이너 ID(`ce67b00c9064`)가 에러 메시지의 ID와 일치했다.
-- **해결**: `docker rm -f my-web-bind`로 삭제한 뒤 재실행했다.
-- **결과**: 재실행 성공.
+✍️ [Case 02] 컨테이너 시작 직후 접속 실패 (분석적 사고)
+문제: 컨테이너 실행 직후 curl 시도 시 Connection reset by peer 오류 발생.
+원인 가설: 컨테이너는 생성되었으나, 내부의 Nginx 프로세스가 완전히 기동되어 포트를 열기까지 시간이 필요할 것이다.
+검증 (3단계):
+즉시 실행: 생성 직후 요청 시 실패 확인.
+지연(Sleep 3): 프로세스 기동을 위한 최소 여유 시간(3초) 부여.
+재시도: 3초 후 정상 응답 확인으로 '타이밍 이슈'임을 증명.
+해결: 실행 스크립트에 대기 시간을 추가하거나, docker ps의 healthy 상태를 확인 후 접속하도록 절차 개선.
+결과: 서비스 안정화 및 기동 시점의 중요성 파악.
 
-### 트러블슈팅 2: 컨테이너 시작 직후 curl 실패
-
-- **문제**: `docker run` 직후 `curl http://localhost:8083`이 `curl: (56) Recv failure: Connection reset by peer`로 실패했다.
-- **원인 가설**: 컨테이너는 만들어졌지만 nginx가 아직 시작 중이라 요청을 받을 준비가 안 됐다.
-- **확인**: 같은 요청을 `sleep 3` 뒤에 다시 실행하자 정상 응답이 왔다(`timing-test` 컨테이너로 재현).
-  ```bash
-  $ docker run -d -p 8083:80 --name timing-test my-web:1.0 && curl http://localhost:8083
-  curl: (56) Recv failure: Connection reset by peer
-  $ sleep 3
-  $ curl http://localhost:8083
-  (정상 HTML 응답)
-  $ docker rm -f timing-test
-  ```
-- **해결**: 컨테이너 실행 후 몇 초 기다리거나 `docker ps`에서 `healthy`를 확인한 뒤 접속한다.
-- **결과**: 3초 뒤 정상 응답.
-
-### 트러블슈팅 3: 컨테이너 안에서 docker 명령 실행
-
-- **문제**: `docker attach`로 들어간 뒤 `docker ps`를 입력하자 `bash: docker: command not found`가 출력됐다.
-- **원인 가설**: 아직 컨테이너 안의 셸이라서, ubuntu 이미지에는 docker CLI가 없을 것이다.
-- **확인**: 프롬프트가 `root@00c2f45a810b:/#` 형태(컨테이너 ID)였다.
-- **해결**: `Ctrl+P, Ctrl+Q`로 분리한 뒤 호스트 터미널에서 실행했다.
-- **결과**: `docker ps` 정상 출력. 이 입력의 종료 코드(127)가 이후 `exit` 시 컨테이너의 `Exited (127)`로 남았다.
-
-### 트러블슈팅 4: Docker Desktop 종료 후 docker 명령 실패
-
-- **문제**: `docker ps -a` 실행 시 아래 오류가 발생했고, 브라우저에서는 `ERR_CONNECTION_REFUSED`(연결 거부)가 표시되었다.
-  ```
-  failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if the daemon is running
-  curl: (7) Failed to connect to localhost port 8082 after 2 ms: Could not connect to server
-  ```
-- **원인 가설**: 터미널이 아니라 Docker Desktop(Docker 엔진)이 종료되어 데몬이 꺼져 있고, 그 때문에 컨테이너도 함께 멈췄을 것이다.
-- **확인**: 모든 `docker` 명령이 같은 데몬 연결 오류를 냈고, 포트 8082뿐 아니라 컨테이너가 응답하지 않았다. 파일(`site/`)은 정상이었다.
-- **해결**: Docker Desktop을 실행해 `Engine running`이 될 때까지 기다린 뒤 `docker ps -a`로 확인하고, 멈춘 컨테이너는 `docker start`로 재시작했다.
-- **결과**: `docker ps`에서 `my-web-8080`, `my-web-8081`이 `Up (healthy)`로 복구되었고 8082 바인드 마운트 컨테이너도 정상 응답했다.
-
-### 트러블슈팅 5: HTTPS 푸시 인증 실패
-
-- **문제**: `git push` 중 아래 오류가 발생했다.
-  ```
-  remote: Invalid username or token. Password authentication is not supported for Git operations.
-  fatal: Authentication failed for 'https://github.com/dcome123/E-1-1.git/'
-  ```
-- **원인 가설**: GitHub는 Git 작업에서 계정 비밀번호 인증을 지원하지 않으며, 입력칸(Username/Password)에 알맞은 값을 넣지 않았을 것이다.
-- **확인**: 오류 문구가 비밀번호 인증 미지원을 명시했다. 또한 VSCode의 WSL 연결이 `Segmentation fault`로 실패해(`code .`), VSCode의 GitHub 로그인 기능으로 푸시하는 방법도 쓰지 못했다.
-- **해결**: GitHub CLI(`gh auth login`)로 브라우저 인증을 하고 SSH 키를 생성/등록한 뒤, 원격 주소를 `git@github.com:dcome123/E-1-1.git`로 바꿔 푸시했다.
-- **결과**: 푸시 성공. 토큰이나 비밀번호를 파일/기록에 남기지 않았다.
-
-### 트러블슈팅 6: WSL에서 `code .` 실행 시 Segmentation fault
-
-- **문제**: WSL(Ubuntu) 터미널에서 `code .`를 실행하면 VSCode가 열리지 않고 아래 오류가 출력되었다.
-  
-  ```
-  $ code .
-  Segmentation fault
-  ```
-  
-  VSCode를 Windows에서 직접 열었을 때도 터미널 영역에 `Segmentation fault`와 "WSL: Ubuntu에서 연결이 끊어졌습니다" 메시지가 표시되었다.
-- **원인 가설**: VSCode가 WSL 안에 설치하는 서버(`~/.vscode-server`) 또는 WSL 연동 구성 요소가 시작 직후 비정상 종료한다.
-- **확인**: 같은 명령이 반복해서 같은 오류를 냈다. `wsl --shutdown`으로 WSL을 재시작한 뒤에도 한동안 동일하게 실패했다. Docker와 Git 명령은 같은 WSL 터미널에서 정상 동작해, 문제는 VSCode의 WSL 연동에 한정되었다.
-- **해결/대안**: 그동안 저장소 푸시는 WSL 터미널의 GitHub CLI(`gh auth login`)와 SSH로 수행했다. 이후 VSCode를 다시 시도하자 WSL에 정상 연결되었다.
-- **결과**: VSCode가 `docker-web [WSL: Ubuntu]`로 열리고 GitHub 계정(`dcome123`)으로 로그인된 화면을 확인했다(위 `vscode-github.png`, `vscode-workspace.png`). 정확한 원인은 확인하지 못했고, 재시도로 해결되었다.
+✍️ [Case 03] GitHub HTTPS 푸시 인증 실패 (환경 적응력)
+문제: git push 시 Invalid username or token. Password authentication is not supported 오류 발생.
+원인 가설: GitHub의 보안 정책 변경으로 인해 더 이상 일반 계정 비밀번호 방식의 HTTPS 인증을 지원하지 않기 때문일 것이다.
+해결 (SSH 도입):
+SSH 키 생성 의미: 비밀번호 대신 '디지털 신분증' 역할을 하는 개인키/공개키 쌍을 생성하여 보안성을 높임.
+과정: GitHub CLI(gh auth login)를 통해 인증 후 SSH 키를 등록하고, 원격 주소를 SSH 형식(git@github.com:...)으로 변경.
+결과: 비밀번호 입력 없이 안전하고 자동화된 푸시 환경 구축 완료.
 
 ## 6. 개념 정리
 
