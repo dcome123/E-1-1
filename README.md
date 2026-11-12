@@ -717,9 +717,9 @@ VSCode가 WSL(Ubuntu)에 연결되어 `docker-web` 저장소 폴더를 열고, �
 - 참고: 이 화면을 찍은 시점에는 `github-*.png` 파일이 `images` 폴더로 옮겨지기 전이라 탐색기에 폴더 바로 아래로 보인다. 최종 위치는 `images/`이다.
 
 ## 5. 트러블슈팅 🌟
-[Case 01] : Docker 컨테이너의 생명주기와 이름 점유 개념을 명확히 이해함.
-[Case 02] : 서비스 기동 시간(Timing)에 따른 오류를 논리적으로 분석하고 검증함.
-[Case 03] : 최신 보안 정책에 맞춰 SSH 인증 방식을 도입하여 개발 환경을 개선함.
+[Case 01] : Docker 컨테이너의 생명주기와 이름 점유 개념을 명확히 이해함. /
+[Case 02] : 서비스 기동 시간(Timing)에 따른 오류를 논리적으로 분석하고 검증함. /
+[Case 03] : 최신 보안 정책에 맞춰 SSH 인증 방식을 도입하여 개발 환경을 개선함. /
 
 ✍️ [Case 01] 컨테이너 이름 충돌 (기초 역량)
 문제: docker run 실행 시 Conflict. The container name "/my-web-bind" is already in use 오류 발생.
