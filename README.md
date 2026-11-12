@@ -489,12 +489,19 @@ a79e53af16a8   my-web:1.0   "/docker-entrypoint.…"   2 seconds ago            
 7b3dfc9d0fe4   ubuntu       "bash"                   About an hour ago        Up About an hour                                                     reverent_feistel
 ```
 
-브라우저 접속 화면 (주소창 포함):
 
-![포트 8080 접속 화면](images/port-8080.png)
-![포트 8081 접속 화면](images/port-8081.png)
+### 브라우저 접속 화면 (주소창 포함):
 
-curl 응답과 헬스체크:
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top"><b>① localhost:8080</b><br><img src="images/port-8080.png" width="450"></td>
+    <td width="50%" align="center" valign="top"><b>② localhost:8081</b><br><img src="images/port-8081.png" width="450"></td>
+  </tr>
+</table>
+
+
+
+### curl 응답과 헬스체크:
 
 ```bash
 $ curl http://localhost:8080
@@ -585,8 +592,12 @@ $ curl http://localhost:8080
 
 브라우저 화면 (주소창 `localhost:8082` 포함): 수정 전 `version: 1.0`, 수정 후 `version: bind-mount-test`
 
-![바인드 마운트 변경 전](images/bind-before.png)
-![바인드 마운트 변경 후](images/bind-after.png)
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top"><b>① 변경 전</b><br><code>version: 1.0</code><br><img src="images/bind-before.png" width="450"></td>
+    <td width="50%" align="center" valign="top"><b>② 변경 후</b><br><code>version: bind-mount-test</code><br><img src="images/bind-after.png" width="450"></td>
+  </tr>
+</table>
 
 - 관찰: 이미지 재빌드 없이 호스트 파일 수정이 8082에 반영됐고, 같은 이미지로 만든 8080은 그대로다.
 - 해석: 바인드 마운트는 호스트 경로를 컨테이너에 직접 연결하므로 호스트 파일이 곧 컨테이너 안의 파일이다. `COPY`한 파일은 빌드 시점에 이미지에 고정된다. `:ro`는 컨테이너 쪽에서 읽기 전용이라는 뜻이다.
