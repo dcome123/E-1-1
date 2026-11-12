@@ -5,6 +5,7 @@
 개발 환경을 "내 컴퓨터에서만 돌아가는" 상태가 아니라, 누구나 같은 방식으로 실행·배포·디버깅할 수 있도록 구성하는 미션이다.
 터미널(CLI)로 작업 디렉토리와 권한을 다루고, Docker로 컨테이너를 실행·관리하며, Dockerfile로 웹 서버 이미지를 만들고, 포트 매핑·바인드 마운트·볼륨을 직접 검증한다. 마지막으로 Git/GitHub를 설정한다.
 
+
 ## 2. 실행 환경
 
 | 항목 | 내용 |
@@ -57,6 +58,7 @@ Server:
 > 참고: 이 환경의 `ls`는 `eza` 계열로 보이는 출력 형식(`.rw-r--r--`)을 사용한다. 일반 `ls -l`의 `-rw-r--r--`와 같은 의미다. (`type ls`로 확인 가능)
 > 개인정보 보호를 위해 로그의 사용자명은 `user`로 치환했다.
 
+
 ## 3. 수행 체크리스트
 
 - [x] 터미널 기본 조작 (pwd, ls -la, cd, mkdir, touch, cp, mv, rm, cat)
@@ -79,6 +81,8 @@ Server:
 - [x] Git 사용자 정보 / 기본 브랜치 설정
 - [x] GitHub CLI(gh) 로그인 및 저장소 푸시 (SSH)
 - [x] VSCode GitHub 로그인 및 WSL 저장소 폴더 연동 (트러블슈팅 6 참고)
+
+
 
 ### 터미널 기본 조작
 
@@ -110,8 +114,9 @@ Server:
 | Git/GitHub | `git config --list`, VSCode 로그인 | 설정, 연동 | [4-10](#4-10-git-설정-및-github-연동) |
 | 트러블슈팅 | 각 항목 참고 | 문제 → 가설 → 확인 → 해결 | [5](#5-트러블슈팅) |
 
-## 4. 수행 로그와 검증
 
+
+## 4. 수행 로그와 검증
 ### 4-1. 터미널 기본 조작
 
 ```bash
@@ -197,6 +202,8 @@ drwxr-xr-x  - user  4 Nov 15:55  perm_dir
 
 - 관찰: 이름이 `.`으로 시작하는 파일은 `-a` 옵션(`ls -la`)에서 보인다.
 
+
+
 ### 4-3. 권한 실습
 
 ```bash
@@ -263,6 +270,8 @@ To generate this message, Docker took the following steps:
 
 - 관찰: `Hello from Docker!` 메시지가 출력되어 hello-world 실행에 성공했다.
 
+
+
 #### 이미지 다운로드와 컨테이너 중지/시작
 
 ```bash
@@ -294,6 +303,8 @@ aee344a75b26   4d47250fae46   "/docker-entrypoint.…"   50 minutes ago   Up 3 s
 - 관찰 3: 재시작 직후에는 `health: starting`이며 잠시 뒤 `healthy`로 바뀐다.
 - 참고: 아래 4-5에서 이미지를 다시 빌드해 `my-web:1.0`의 ID가 `4d47250fae46`에서 `80910c3eebd0`으로 바뀌었다. 기존 컨테이너는 이전 ID의 이미지로 계속 실행된다.
 
+
+
 #### (1) docker run -it: exit 시 컨테이너 종료 여부
 
 ```bash
@@ -308,6 +319,8 @@ f4cf4e9fa4cd   ubuntu    "bash"    30 seconds ago   Exited (0) Less than a secon
 
 - 관찰: `exit` 후 STATUS가 `Exited (0)`
 - 해석: `bash`가 메인 프로세스(PID 1)라서 bash가 끝나면 컨테이너도 종료된다.
+
+
 
 #### (2) docker exec: exit 후에도 컨테이너 유지 여부
 
@@ -325,6 +338,8 @@ CONTAINER ID   IMAGE     COMMAND            CREATED          STATUS          POR
 
 - 관찰: `exec`로 들어간 bash를 `exit`해도 `Up` 유지
 - 해석: 메인 프로세스는 `sleep infinity`이고 `exec`의 bash는 추가로 띄운 보조 프로세스다. 보조 프로세스가 끝나도 메인 프로세스는 계속 실행된다.
+
+
 
 #### (3) docker attach: 분리(Ctrl+P, Ctrl+Q)와 종료(exit)의 차이
 
@@ -350,6 +365,8 @@ CONTAINER ID   IMAGE     COMMAND   CREATED              STATUS                  
 - 관찰 2: attach 후 `exit`하면 메인 프로세스(bash)가 종료되어 `Exited`
 - 관찰 3: 종료 코드가 127인 이유는 직전에 컨테이너 안에서 입력한 `docker ps`가 `command not found`(127)였고, bash가 마지막 명령의 종료 코드를 그대로 반환했기 때문이다.
 
+
+
 #### 종합
 
 | 방식 | 명령 | 빠져나온 뒤 상태 | 이유 |
@@ -360,6 +377,8 @@ CONTAINER ID   IMAGE     COMMAND   CREATED              STATUS                  
 | attach + exit | `exit` | Exited | 메인 프로세스(bash) 종료 |
 
 **결론: 컨테이너의 수명은 메인 프로세스(PID 1 :실행 중인 모든 프로세스에 부여되는 고유 번호)의 수명과 같다.**
+
+
 
 #### 컨테이너 정리
 
@@ -470,6 +489,8 @@ $ docker build --no-cache -t my-web:1.0 .
 - 관찰: 빌드가 `FINISHED`로 성공했고, `COPY site/ /usr/share/nginx/html/` 단계가 실행되었다. 베이스 이미지 레이어(`nginx:alpine`)는 이미 받아 둔 것을 재사용했다(`CACHED`).
 - 처음 빌드한 기록은 남기지 않아, 재빌드 결과를 기록했다. (출력은 가독성을 위해 일부 줄과 해시를 줄였다.)
 
+
+
 ### 4-6. 포트 매핑 2회
 
 ```bash
@@ -529,6 +550,8 @@ a79e53af16a8   my-web:1.0   "/docker-entrypoint.…"   15 minutes ago      Up 15
 - 관찰: 같은 이미지를 호스트 포트만 다르게 2개 실행해도 둘 다 접속된다.
 - 해석: 컨테이너는 격리된 자체 네트워크를 가져서 컨테이너 안의 80번 포트를 호스트에서 바로 쓸 수 없다. `-p 호스트:컨테이너`로 호스트 포트를 컨테이너 포트에 연결해야 접속할 수 있다. 컨테이너 내부 포트는 서로 겹치지 않으므로 호스트 포트만 다르면 동시에 실행된다.
 
+
+
 ### 4-7. 운영 명령 logs와 stats
 
 로그는 헬스체크 줄이 반복되어 일부를 발췌했다(`...`은 생략 표시).
@@ -558,6 +581,8 @@ a79e53af16a8   my-web-8080        0.00%     15.37MiB / 2.764GiB   0.54%     1.79
 - 관찰 1: `::1`의 `Wget` 요청은 약 30초 간격으로 반복된다. `HEALTHCHECK`가 컨테이너 내부에서 보낸 점검이다.
 - 관찰 2: `172.17.0.1`의 `curl` 요청은 호스트에서 포트 매핑(8080→80)을 거쳐 도달한 접속이다.
 - 관찰 3: nginx 컨테이너는 메모리를 약 12~15MiB, CPU는 0%대로 사용한다.
+
+
 
 ### 4-8. 바인드 마운트
 
@@ -602,6 +627,7 @@ $ curl http://localhost:8080
 - 관찰: 이미지 재빌드 없이 호스트 파일 수정이 8082에 반영됐고, 같은 이미지로 만든 8080은 그대로다.
 - 해석: 바인드 마운트는 호스트 경로를 컨테이너에 직접 연결하므로 호스트 파일이 곧 컨테이너 안의 파일이다. `COPY`한 파일은 빌드 시점에 이미지에 고정된다. `:ro`는 컨테이너 쪽에서 읽기 전용이라는 뜻이다.
 - 실습 후 `site/index.html`은 `version: 1.0`으로 되돌렸다.
+
 
 ### 4-9. Docker 볼륨 영속성
 
@@ -651,6 +677,8 @@ local     mydata
 ```
 
 실습 후 볼륨까지 지우려면 `docker volume rm mydata`를 실행한다.
+
+
 
 ### 4-10. Git 설정 및 GitHub 연동
 
@@ -706,26 +734,24 @@ branch 'main' set up to track 'origin/main'.
 - 관찰: `main` 브랜치가 GitHub 저장소로 올라갔고 `origin/main`을 추적한다.
 - 해석: Git은 내 컴퓨터에서 변경 이력을 관리하는 로컬 버전 관리 도구이고, GitHub는 그 저장소를 원격에 올려 공유·협업하는 플랫폼이다. `git push`가 둘을 연결한다.
 
-연동 증거:
 
-GitHub 저장소 화면 (푸시한 파일과 README 이미지가 표시됨):
+## 🔍 연동 증거
 
-![GitHub 저장소](images/github-repo.png)
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top"><b>① GitHub 저장소</b><br>푸시한 파일과 README 표시<br><img src="images/github-repo.png" width="420" height="265"></td>
+    <td width="50%" align="center" valign="top"><b>② 등록된 SSH 키</b><br>개인키는 표시되지 않음<br><img src="images/github-ssh-key.png" width="420" height="265"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top"><b>③ VSCode 계정 로그인</b><br>GitHub 계정 연동 확인<br><img src="images/vscode-github.png" width="420" height="265"></td>
+    <td width="50%" align="center" valign="top"><b>④ VSCode + WSL 연결</b><br>docker-web 저장소, main 브랜치<br><img src="images/vscode-workspace.png" width="420" height="265"></td>
+  </tr>
+</table>
 
-GitHub에 등록된 SSH 키 (`GitHub CLI`, 개인키는 표시되지 않음):
+- **관찰 (④):** 왼쪽 아래 `WSL: Ubuntu`, 탐색기 `docker-web [WSL: Ubuntu]`, 터미널 `docker-web on main`이 표시, VSCode에서 저장소가 열려 있음을 확인
+- **참고:** ④ 캡처 시점에는 `github-*.png` 파일이 아직 `images/` 폴더로 옮겨지기 전으로, 최종 위치는 `images/`이다.
 
-![SSH 키 등록](images/github-ssh-key.png)
 
-VSCode 계정 메뉴에 GitHub 계정(`dcome123`)으로 로그인된 화면:
-
-![VSCode GitHub 로그인](images/vscode-github.png)
-
-VSCode가 WSL(Ubuntu)에 연결되어 `docker-web` 저장소 폴더를 열고, 터미널에서 `main` 브랜치가 표시되는 화면:
-
-![VSCode WSL 저장소 연동](images/vscode-workspace.png)
-
-- 관찰: 왼쪽 아래에 `WSL: Ubuntu`, 탐색기에 `docker-web [WSL: Ubuntu]`, 터미널에 `docker-web on main`이 표시되어 VSCode에서 저장소가 열려 있음을 확인할 수 있다.
-- 참고: 이 화면을 찍은 시점에는 `github-*.png` 파일이 `images` 폴더로 옮겨지기 전이라 탐색기에 폴더 바로 아래로 보인다. 최종 위치는 `images/`이다.
 
 ## 5. 트러블슈팅 🌟
 [Case 01] : Docker 컨테이너의 생명주기와 이름 점유 개념을 명확히 이해함. /
@@ -757,6 +783,8 @@ SSH 키 생성 의미: 비밀번호 대신 '디지털 신분증' 역할을 하�
 과정: GitHub CLI(gh auth login)를 통해 인증 후 SSH 키를 등록하고, 원격 주소를 SSH 형식(git@github.com:...)으로 변경.
 결과: 비밀번호 입력 없이 안전하고 자동화된 푸시 환경 구축 완료.
 
+
+
 ## 6. 개념 정리
 
 - **이미지와 컨테이너**: 이미지는 읽기 전용 템플릿(`my-web:1.0`), 컨테이너는 이미지를 실행한 인스턴스다. 같은 이미지로 컨테이너를 여러 개 만들어도 같은 환경이 재현된다. 컨테이너를 삭제해도 이미지는 남는다.
@@ -771,6 +799,8 @@ SSH 키 생성 의미: 비밀번호 대신 '디지털 신분증' 역할을 하�
 
 - **Git과 GitHub**: Git은 내 컴퓨터에서 변경 이력을 관리하는 로컬 버전 관리 도구이고, GitHub는 Git 저장소를 원격에 올려 공유·협업(PR, 이슈 등)하는 플랫폼이다.
 
+
+
 ## 7. 재현 방법
 
 ```bash
@@ -784,6 +814,8 @@ curl http://localhost:8080
 - 로그의 경로는 `/home/user/...`로 치환했으므로 본인 환경의 홈 디렉토리로 바꿔서 실행한다.
 - `sed -i`는 Linux/WSL 기준이다. macOS에서는 `sed -i ''`를 사용한다.
 - 정리: `docker rm -f my-web-8080 my-web-8081` 후 필요하면 `docker volume rm mydata`.
+
+
 
 ## 8. 보안 및 개인정보
 
