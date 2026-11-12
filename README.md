@@ -236,7 +236,8 @@ drwxr-xr-x - user  4 Nov 15:55  perm_dir
 
 ### 4-4. Docker 기본 운영과 컨테이너 실행
 
-hello-world와 ubuntu 컨테이너 실행 기록 (`docker ps -a` 일부):
+hello-world와 ubuntu 컨테이너 실행 기록 (`docker ps -a` 일부): 
+docker ps -a	전체 컨테이너 표시 (중지된 것 포함)
 
 ```bash
 c64ce12ff1b1   hello-world   "/hello"   17 hours ago     Exited (0) 17 hours ago     recursing_wozniak
@@ -265,7 +266,7 @@ To generate this message, Docker took the following steps:
 #### 이미지 다운로드와 컨테이너 중지/시작
 
 ```bash
-$ docker pull alpine:latest
+$ docker pull alpine:latest 
 latest: Pulling from library/alpine
 Digest: sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 Status: Image is up to date for alpine:latest
@@ -288,7 +289,7 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS  
 aee344a75b26   4d47250fae46   "/docker-entrypoint.…"   50 minutes ago   Up 3 seconds (health: starting)   0.0.0.0:8081->80/tcp, [::]:8081->80/tcp   my-web-8081
 ```
 
-- 관찰 1: `docker pull`은 `alpine:latest`가 이미 로컬에 있어 `Image is up to date`로 끝났고, `docker images`에서 목록을 확인했다.
+- 관찰 1: `docker pull`은 `alpine:latest(가장 최신 버전)`가 이미 로컬에 있어 `Image is up to date`로 끝났고, `docker images`에서 목록을 확인했다.
 - 관찰 2: `docker stop` 후 STATUS가 `Exited (0)`, `docker start` 후 다시 `Up`이 되었고 포트 매핑(8081→80)도 유지되었다.
 - 관찰 3: 재시작 직후에는 `health: starting`이며 잠시 뒤 `healthy`로 바뀐다.
 - 참고: 아래 4-5에서 이미지를 다시 빌드해 `my-web:1.0`의 ID가 `4d47250fae46`에서 `80910c3eebd0`으로 바뀌었다. 기존 컨테이너는 이전 ID의 이미지로 계속 실행된다.
@@ -345,7 +346,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED              STATUS                  
 00c2f45a810b   ubuntu    "bash"    About a minute ago   Exited (127) 6 seconds ago             ubuntu-it
 ```
 
-- 관찰 1: `Ctrl+P, Ctrl+Q`로 분리하면 `Up` 유지
+- 관찰 1: `Ctrl+P, Ctrl+Q`로 분리하면 `Up` 유지 (컨테이너는 살리고, 나만 나오기)
 - 관찰 2: attach 후 `exit`하면 메인 프로세스(bash)가 종료되어 `Exited`
 - 관찰 3: 종료 코드가 127인 이유는 직전에 컨테이너 안에서 입력한 `docker ps`가 `command not found`(127)였고, bash가 마지막 명령의 종료 코드를 그대로 반환했기 때문이다.
 
@@ -358,7 +359,7 @@ CONTAINER ID   IMAGE     COMMAND   CREATED              STATUS                  
 | attach + 분리 | `Ctrl+P, Ctrl+Q` | Up 유지 | 연결만 끊고 프로세스는 종료하지 않음 |
 | attach + exit | `exit` | Exited | 메인 프로세스(bash) 종료 |
 
-**결론: 컨테이너의 수명은 메인 프로세스(PID 1)의 수명과 같다.**
+**결론: 컨테이너의 수명은 메인 프로세스(PID 1 :실행 중인 모든 프로세스에 부여되는 고유 번호)의 수명과 같다.**
 
 #### 컨테이너 정리
 
